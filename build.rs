@@ -45,9 +45,17 @@ fn main() {
         let lib_paths = lib_path_list.split(',').filter(|s| !s.is_empty());
         let curses_libnames: Vec<_> = lib_paths
             .map(|libpath| {
-                let stem = Path::new(libpath).file_stem().unwrap().to_str().unwrap();
-                // Ubuntu-32bit-fetched-pcre2's ncurses doesn't have the "lib" prefix.
-                stem.strip_prefix("lib").unwrap_or(stem)
+                #[cfg(target_os = "openbsd")]
+                {
+                    let fname = Path::new(&libpath).file_name().unwrap().to_str().unwrap();
+                    format!("dylib:+verbatim={}", fname)
+                }
+                #[cfg(not(target_os = "openbsd"))]
+                {
+                    let stem = Path::new(libpath).file_stem().unwrap().to_str().unwrap();
+                    // Ubuntu-32bit-fetched-pcre2's ncurses doesn't have the "lib" prefix.
+                    stem.strip_prefix("lib").unwrap_or(stem)
+                }
             })
             .collect();
         // We don't need to test the libs because presumably CMake already did
